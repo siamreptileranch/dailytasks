@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRR2 Task Manager</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0d0d;--paper:#faf9f6;--card:#fff;
+  --accent:#e8410a;--accent2:#2563eb;--accent3:#16a34a;
+  --amber:#d97706;--border:#e2ddd8;--muted:#7a746e;
+  --done:#d1fae5;--done-ink:#065f46;
+  --prog:#fef3c7;--prog-ink:#92400e;
+  --newbg:#fee2e2;--new-ink:#991b1b;
+  --r:10px;--font-head:'Syne',sans-serif;--font-body:'DM Sans',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:14px;min-height:100vh}
+
+/* TOPBAR */
+.topbar{background:var(--ink);color:#fff;padding:0 16px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;gap:10px}
+.logo{display:flex;align-items:center;gap:9px;font-family:var(--font-head);font-size:15px;font-weight:700;white-space:nowrap}
+.logo span{color:var(--accent);font-size:18px}
+.logo-my{font-size:9px;color:rgba(255,255,255,.45);font-family:var(--font-body);font-weight:400;margin-top:1px}
+.topbar-mid{display:flex;gap:2px;flex-shrink:0}
+.nav-btn{padding:5px 11px;border-radius:6px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.08);font-size:11px;font-weight:600;cursor:pointer;color:rgba(255,255,255,.75);font-family:var(--font-body);transition:all .1s;white-space:nowrap}
+.nav-btn:hover{background:rgba(255,255,255,.18)}
+.nav-btn.active{background:rgba(255,255,255,.22);color:#fff;border-color:rgba(255,255,255,.4)}
+.topbar-right{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.clock{font-size:10px;color:rgba(255,255,255,.45);white-space:nowrap}
+.sync-pill{font-size:11px;padding:4px 10px;border-radius:20px;font-weight:600;background:#f3f4f6;color:#6b7280;border:1px solid #e5e7eb;cursor:pointer;white-space:nowrap;transition:all .2s}
+.new-btn{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:7px 13px;font-size:12px;font-weight:600;font-family:var(--font-body);cursor:pointer;white-space:nowrap;transition:opacity .15s}
+.new-btn:hover{opacity:.85}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:200px 1fr;min-height:calc(100vh - 54px)}
+.sidebar{background:#fff;border-right:1px solid var(--border);padding:12px 8px;display:flex;flex-direction:column;gap:2px;position:sticky;top:54px;height:calc(100vh - 54px);overflow-y:auto}
+.sb-sec{font-size:9px;font-weight:700;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;padding:7px 8px 4px;margin-top:4px}
+.sb-btn{display:flex;align-items:center;gap:7px;padding:7px 8px;border-radius:8px;border:none;background:transparent;width:100%;font-family:var(--font-body);font-size:12px;color:var(--ink);cursor:pointer;text-align:left;transition:background .1s}
+.sb-btn:hover{background:#f4f2ef}
+.sb-btn.active{background:var(--accent);color:#fff}
+.sb-btn.active .cnt{background:rgba(255,255,255,.25);color:#fff}
+.sb-ico{font-size:14px;flex-shrink:0;width:17px;text-align:center}
+.cnt{margin-left:auto;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;background:#f0ece8;color:var(--muted)}
+.cnt.red{background:var(--newbg);color:var(--new-ink)}
+.sb-div{height:1px;background:var(--border);margin:5px 0}
+.sb-legend{padding:6px 8px;background:var(--bg,#f8f7f4);border-radius:var(--r);margin:4px 0}
+.leg-row{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--muted);padding:2px 0}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* MAIN */
+.main{padding:16px;overflow-y:auto}
+.sum-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:12px}
+.sum-card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:10px 8px;text-align:center}
+.sum-val{font-family:var(--font-head);font-size:22px;font-weight:700;line-height:1}
+.sum-lbl{font-size:9px;color:var(--muted);margin-top:2px;font-weight:600}
+.sum-lbl-my{font-size:8px;color:var(--muted)}
+
+.filterbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.search-wrap{flex:1;min-width:160px;position:relative}
+.search-ico{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:14px;pointer-events:none}
+.search-inp{width:100%;background:#fff;border:1px solid var(--border);border-radius:8px;padding:7px 10px 7px 30px;font-size:12px;font-family:var(--font-body);color:var(--ink);outline:none}
+.search-inp:focus{border-color:var(--accent2)}
+.fpill{padding:5px 10px;border-radius:20px;border:1px solid var(--border);background:#fff;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);color:var(--muted);white-space:nowrap}
+.fpill:hover,.fpill.active{border-color:var(--accent);background:var(--accent);color:#fff}
+
+/* KANBAN */
+.kanban{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+.kol{background:#f4f2ef;border-radius:12px;padding:10px 8px;min-height:160px}
+.kol-head{display:flex;align-items:center;justify-content:space-between;padding:2px 2px 8px}
+.kol-title{font-family:var(--font-head);font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px}
+.kol-my{font-size:9px;color:var(--muted);font-family:var(--font-body);font-weight:400;margin-top:1px}
+.kol-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px}
+.kol-badge.new{background:var(--newbg);color:var(--new-ink)}
+.kol-badge.prog{background:var(--prog);color:var(--prog-ink)}
+.kol-badge.done{background:var(--done);color:var(--done-ink)}
+.kdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+
+/* TASK CARD */
+.tcard{background:#fff;border:1px solid var(--border);border-radius:9px;padding:10px;margin-bottom:7px;cursor:pointer;transition:box-shadow .15s,transform .1s;position:relative}
+.tcard:hover{box-shadow:0 4px 14px rgba(0,0,0,.1);transform:translateY(-1px)}
+.tcard.urgent{border-left:3px solid var(--accent)}
+.tcard.medium{border-left:3px solid var(--amber)}
+.tcard.low{border-left:3px solid var(--accent3)}
+.tc-top{display:flex;align-items:flex-start;justify-content:space-between;gap:6px;margin-bottom:5px}
+.tc-title{font-size:12px;font-weight:500;line-height:1.35;flex:1}
+.tc-pri{font-size:9px;font-weight:700;padding:2px 5px;border-radius:5px;white-space:nowrap;flex-shrink:0}
+.tc-pri.urgent{background:#fee2e2;color:#991b1b}
+.tc-pri.medium{background:#fef3c7;color:#92400e}
+.tc-pri.low{background:#d1fae5;color:#065f46}
+.tc-desc{font-size:11px;color:var(--muted);line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.tc-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tc-avatar{width:17px;height:17px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0}
+.tc-author{font-size:10px;color:var(--muted)}
+.tc-date{font-size:9px;color:var(--muted);margin-left:auto}
+.tc-comments{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:2px}
+.tc-due{font-size:9px;padding:1px 5px;border-radius:4px;background:#f4f2ef;color:var(--muted)}
+.tc-due.overdue{background:#fee2e2;color:#991b1b}
+
+/* LOADING */
+.loading-overlay{position:fixed;inset:0;background:rgba(250,249,246,.85);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{font-family:var(--font-head);font-size:14px;font-weight:700;color:var(--muted)}
+
+/* MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:flex-start;justify-content:center;padding:50px 12px 20px;overflow-y:auto}
+.overlay.open{display:flex}
+.modal{background:#fff;border-radius:12px;width:100%;max-width:520px;box-shadow:0 16px 48px rgba(0,0,0,.22)}
+.modal-top{display:flex;align-items:flex-start;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.modal-title{font-family:var(--font-head);font-size:17px;font-weight:700;line-height:1.3}
+.modal-close{width:30px;height:30px;border-radius:50%;border:none;background:#f4f2ef;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--muted);flex-shrink:0;font-family:var(--font-body)}
+.modal-close:hover{background:var(--border)}
+.modal-body{padding:14px 18px;max-height:72vh;overflow-y:auto}
+.modal-footer{padding:10px 18px;border-top:1px solid var(--border);display:flex;gap:7px;justify-content:flex-end;flex-wrap:wrap}
+
+.field{margin-bottom:11px}
+.flabel{font-size:10px;font-weight:700;color:var(--muted);letter-spacing:.04em;margin-bottom:4px;display:flex;align-items:center;gap:5px}
+.flabel-my{font-size:9px;color:var(--muted);font-weight:400}
+.finput{width:100%;background:#faf9f6;border:1.5px solid var(--border);border-radius:8px;padding:8px 11px;font-size:13px;font-family:var(--font-body);color:var(--ink);outline:none;transition:border-color .15s}
+.finput:focus{border-color:var(--accent2);background:#fff}
+.ftextarea{resize:vertical;min-height:65px;line-height:1.5}
+
+.pri-row{display:flex;gap:5px;margin-bottom:11px}
+.pri-btn{flex:1;padding:7px 3px;border-radius:8px;border:1.5px solid var(--border);background:#faf9f6;font-size:11px;font-weight:700;cursor:pointer;font-family:var(--font-body);text-align:center;transition:all .1s}
+.pri-btn.sel-urgent{border-color:var(--accent);background:#fee2e2;color:#991b1b}
+.pri-btn.sel-medium{border-color:var(--amber);background:#fef3c7;color:#92400e}
+.pri-btn.sel-low{border-color:var(--accent3);background:#d1fae5;color:#065f46}
+
+.status-row{display:flex;gap:5px;margin-bottom:11px}
+.st-btn{flex:1;padding:7px 3px;border-radius:8px;border:1.5px solid var(--border);background:#faf9f6;font-size:11px;font-weight:600;cursor:pointer;font-family:var(--font-body);text-align:center;transition:all .1s}
+.st-btn.sel-new{border-color:#991b1b;background:var(--newbg);color:var(--new-ink)}
+.st-btn.sel-progress{border-color:var(--amber);background:var(--prog);color:var(--prog-ink)}
+.st-btn.sel-done{border-color:var(--accent3);background:var(--done);color:var(--done-ink)}
+
+/* CHECKLIST */
+.check-list{margin-bottom:10px}
+.check-item{display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid #f4f2ef}
+.check-item:last-child{border-bottom:none}
+.check-cb{width:15px;height:15px;accent-color:var(--accent);cursor:pointer;flex-shrink:0}
+.check-text{font-size:12px;flex:1;line-height:1.4}
+.check-text.done{text-decoration:line-through;color:var(--muted)}
+.check-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;padding:0 2px;flex-shrink:0;font-family:var(--font-body)}
+.check-del:hover{color:var(--accent)}
+.add-check-row{display:flex;gap:5px;margin-top:5px}
+.add-check-inp{flex:1;background:#faf9f6;border:1.5px solid var(--border);border-radius:7px;padding:6px 9px;font-size:12px;font-family:var(--font-body);color:var(--ink);outline:none}
+.add-check-inp:focus{border-color:var(--accent2)}
+
+/* COMMENTS */
+.comments-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}
+.comment{background:#faf9f6;border-radius:9px;padding:9px 11px;border:1px solid var(--border)}
+.comment-top{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+.comment-author{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:500}
+.comment-dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0}
+.comment-date{font-size:10px;color:var(--muted);margin-left:auto}
+.comment-text{font-size:12px;line-height:1.5}
+.comment-inp{width:100%;background:#faf9f6;border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;font-family:var(--font-body);color:var(--ink);outline:none;resize:none;min-height:46px;line-height:1.5}
+.comment-inp:focus{border-color:var(--accent2);background:#fff}
+
+/* STATUS BADGE */
+.sbadge{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px}
+.sbadge.new{background:var(--newbg);color:var(--new-ink)}
+.sbadge.progress{background:var(--prog);color:var(--prog-ink)}
+.sbadge.done{background:var(--done);color:var(--done-ink)}
+
+/* DETAIL META */
+.dmeta-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px}
+.dmeta-item{background:#faf9f6;border-radius:7px;padding:8px 10px}
+.dmeta-label{font-size:9px;color:var(--muted);font-weight:700;margin-bottom:2px}
+.dmeta-val{font-size:12px;font-weight:500}
+
+/* ACTIVITY LOG */
+.act-entry{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid #f0ece8}
+.act-entry:last-child{border-bottom:none}
+.act-ico{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;margin-top:1px}
+.act-ico.created{background:#d1fae5}.act-ico.status{background:#fef3c7}.act-ico.commented{background:#e0e7ff}
+.act-ico.edited{background:#e0f2fe}.act-ico.deleted{background:#fee2e2}.act-ico.viewed{background:#f4f2ef}
+.act-body{flex:1;min-width:0}
+.act-top{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-bottom:1px}
+.act-who{font-size:12px;font-weight:600}
+.act-what{font-size:12px;color:var(--muted)}
+.act-task-link{font-size:12px;font-weight:500;color:var(--accent2);cursor:pointer;text-decoration:underline;text-underline-offset:2px}
+.act-time{font-size:10px;color:var(--muted);margin-left:auto;white-space:nowrap}
+.act-detail{font-size:11px;color:var(--muted);margin-top:1px}
+.act-day-hdr{font-family:var(--font-head);font-size:12px;font-weight:700;padding:10px 0 5px;border-bottom:2px solid var(--border);margin-bottom:3px;display:flex;align-items:center;justify-content:space-between}
+
+/* CALENDAR */
+.cal-nav{display:flex;align-items:center;gap:9px;margin-bottom:12px}
+.cal-month{font-family:var(--font-head);font-size:17px;font-weight:700}
+.cal-nav-btn{width:30px;height:30px;border-radius:7px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;font-family:var(--font-body);transition:background .1s}
+.cal-nav-btn:hover{background:#f4f2ef}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;margin-bottom:14px}
+.cal-dow{text-align:center;font-size:9px;font-weight:700;color:var(--muted);padding:3px 0}
+.cal-day{min-height:50px;border-radius:7px;border:1px solid var(--border);background:#fff;padding:3px;cursor:pointer;transition:background .1s}
+.cal-day:hover{background:#f4f2ef}
+.cal-day.today{border-color:var(--accent);background:#fff8f6}
+.cal-day.selected{background:var(--accent);border-color:var(--accent)}
+.cal-day.selected .cal-dn{color:#fff}
+.cal-day.other{background:#faf9f6;opacity:.45}
+.cal-dn{font-size:11px;font-weight:600;line-height:1}
+.cal-dots{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
+.cal-dot{width:5px;height:5px;border-radius:50%}
+.cal-tasks{background:#fff;border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:4px}
+.cal-task-row{display:flex;align-items:center;gap:7px;padding:7px 9px;border-radius:7px;border:1px solid var(--border);margin-bottom:5px;cursor:pointer;transition:background .1s}
+.cal-task-row:hover{background:#f4f2ef}
+.cal-tdot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+
+/* EMPTY */
+.empty{text-align:center;padding:32px 16px;color:var(--muted)}
+.empty-ico{font-size:32px;margin-bottom:7px}
+
+/* BUTTONS */
+.btn{padding:7px 15px;border-radius:8px;border:none;font-size:12px;font-weight:500;font-family:var(--font-body);cursor:pointer;transition:opacity .15s;white-space:nowrap}
+.btn:hover{opacity:.85}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-success{background:var(--accent3);color:#fff}
+.btn-ghost{background:#f4f2ef;color:var(--ink);border:1px solid var(--border)}
+
+/* TOAST */
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(10px);background:var(--ink);color:#fff;padding:9px 17px;border-radius:8px;font-size:12px;font-weight:500;opacity:0;transition:all .25s;z-index:999;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.fab{position:fixed;bottom:22px;right:22px;width:50px;height:50px;border-radius:50%;background:var(--accent);color:#fff;border:none;font-size:24px;cursor:pointer;box-shadow:0 4px 18px rgba(232,65,10,.4);display:flex;align-items:center;justify-content:center;z-index:199;transition:transform .15s}
+.fab:hover{transform:scale(1.1)}
+
+@media(max-width:680px){
+  .layout{grid-template-columns:1fr}.sidebar{display:none}
+  .kanban{grid-template-columns:1fr}
+  .dmeta-grid{grid-template-columns:1fr}
+  .topbar-mid{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="spinner"></div>
+  <div class="loading-text">Loading tasks… · တာဝန်များဖွင့်နေသည်…</div>
+</div>
+
+<div class="topbar">
+  <div class="logo">
+    <span>🦎</span>
+    <div><div>SRR2 Task Manager</div><div class="logo-my">တာဝန်စီမံခန့်ခွဲမှုစနစ် · Live shared</div></div>
+  </div>
+  <div class="topbar-mid">
+    <button type="button" class="nav-btn active" id="nav-board"    onclick="showPage('board')">📋 Board</button>
+    <button type="button" class="nav-btn"        id="nav-activity" onclick="showPage('activity')">📜 Activity</button>
+    <button type="button" class="nav-btn"        id="nav-calendar" onclick="showPage('calendar')">📅 Calendar</button>
+  </div>
+  <div class="topbar-right">
+    <div class="clock" id="clock"></div>
+    <span class="sync-pill" id="sync-pill" onclick="loadTasks(true)" title="Click to refresh">⬤ Connecting…</span>
+    <button type="button" class="new-btn" onclick="openNewTask()">＋ New Task</button>
+  </div>
+</div>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sb-sec">Views · မြင်ကွင်း</div>
+    <button type="button" class="sb-btn active" id="sb-all"      onclick="setView('all')"><span class="sb-ico">📋</span>All Tasks<span class="cnt" id="cnt-all">0</span></button>
+    <button type="button" class="sb-btn"        id="sb-new"      onclick="setView('new')"><span class="sb-ico">🆕</span>New<span class="cnt red" id="cnt-new">0</span></button>
+    <button type="button" class="sb-btn"        id="sb-progress" onclick="setView('progress')"><span class="sb-ico">🔧</span>In progress<span class="cnt" id="cnt-progress">0</span></button>
+    <button type="button" class="sb-btn"        id="sb-done"     onclick="setView('done')"><span class="sb-ico">✅</span>Done<span class="cnt" id="cnt-done">0</span></button>
+    <div class="sb-div"></div>
+    <div class="sb-sec">Priority · အရေးပါမှု</div>
+    <button type="button" class="sb-btn" id="sb-urgent" onclick="setView('urgent')"><span class="sb-ico">🔴</span>Urgent<span class="cnt red" id="cnt-urgent">0</span></button>
+    <button type="button" class="sb-btn" id="sb-medium" onclick="setView('medium')"><span class="sb-ico">🟡</span>Medium<span class="cnt" id="cnt-medium">0</span></button>
+    <button type="button" class="sb-btn" id="sb-low"    onclick="setView('low')"><span class="sb-ico">🟢</span>Low<span class="cnt" id="cnt-low">0</span></button>
+    <div class="sb-div"></div>
+    <div class="sb-sec">Team · အဖွဲ့</div>
+    <div id="sb-authors"></div>
+    <div class="sb-div"></div>
+    <div class="sb-legend">
+      <div class="sb-sec" style="margin:0 0 4px;padding:0">CONDITIONS</div>
+      <div class="leg-row"><span class="leg-dot" style="background:var(--accent)"></span>Urgent · အရေးပေါ်</div>
+      <div class="leg-row"><span class="leg-dot" style="background:var(--amber)"></span>Medium · အလယ်</div>
+      <div class="leg-row"><span class="leg-dot" style="background:var(--accent3)"></span>Low · အရေးမကြီး</div>
+    </div>
+    <div class="sb-div"></div>
+    <button type="button" class="sb-btn" onclick="exportCSV()" style="color:#2563eb">⬇ Export CSV</button>
+  </aside>
+
+  <main class="main">
+    <div id="page-board">
+      <div class="sum-row" id="sum-row"></div>
+      <div class="filterbar">
+        <div class="search-wrap">
+          <span class="search-ico">🔍</span>
+          <input class="search-inp" id="search" placeholder="Search tasks · ရှာရန်..." oninput="render()">
+        </div>
+        <button type="button" class="fpill active" id="fp-all"    onclick="setPri('all')">All</button>
+        <button type="button" class="fpill" id="fp-urgent"        onclick="setPri('urgent')">🔴</button>
+        <button type="button" class="fpill" id="fp-medium"        onclick="setPri('medium')">🟡</button>
+        <button type="button" class="fpill" id="fp-low"           onclick="setPri('low')">🟢</button>
+        <button type="button" class="fpill" onclick="loadTasks(true)" style="border-color:var(--accent2);color:var(--accent2)">↻ Refresh</button>
+      </div>
+      <div id="board"></div>
+    </div>
+    <div id="page-activity" style="display:none">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+        <div><div style="font-family:var(--font-head);font-size:17px;font-weight:700">Activity Log · လုပ်ဆောင်မှုမှတ်တမ်း</div><div style="font-size:11px;color:var(--muted);margin-top:2px">Every action recorded · အားလုံးမှတ်တမ်းတင်</div></div>
+      </div>
+      <div id="activity-list"></div>
+    </div>
+    <div id="page-calendar" style="display:none">
+      <div style="font-family:var(--font-head);font-size:17px;font-weight:700;margin-bottom:4px">Calendar · ပြက္ခဒိန်</div>
+      <div id="calendar-container"></div>
+    </div>
+  </main>
+</div>
+
+<button type="button" class="fab" onclick="openNewTask()">＋</button>
+
+<!-- NEW/EDIT MODAL -->
+<div class="overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-top">
+      <div class="modal-title" id="task-modal-title">New Task · တာဝန်သစ်</div>
+      <button type="button" class="modal-close" onclick="closeModal('task-modal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="field"><label class="flabel">Title <span class="flabel-my">· ခေါင်းစဉ်</span></label><input class="finput" id="f-title" placeholder="What needs to be done?"></div>
+      <div class="field"><label class="flabel">Description <span class="flabel-my">· အသေးစိတ်</span></label><textarea class="finput ftextarea" id="f-desc" placeholder="Details, location..."></textarea></div>
+      <div class="field"><label class="flabel">Priority <span class="flabel-my">· အရေးပါမှု</span></label>
+        <div class="pri-row">
+          <button type="button" class="pri-btn" id="pri-urgent" onclick="setPriSel('urgent')">🔴 Urgent<br><span style="font-size:9px;font-weight:400">အရေးပေါ်</span></button>
+          <button type="button" class="pri-btn" id="pri-medium" onclick="setPriSel('medium')">🟡 Medium<br><span style="font-size:9px;font-weight:400">အလယ်</span></button>
+          <button type="button" class="pri-btn" id="pri-low"    onclick="setPriSel('low')">🟢 Low<br><span style="font-size:9px;font-weight:400">အရေးမကြီး</span></button>
+        </div>
+      </div>
+      <div class="field"><label class="flabel">Status <span class="flabel-my">· အခြေအနေ</span></label>
+        <div class="status-row">
+          <button type="button" class="st-btn" id="st-new"      onclick="setStSel('new')">🆕 New<br><span style="font-size:9px;font-weight:400">အသစ်</span></button>
+          <button type="button" class="st-btn" id="st-progress" onclick="setStSel('progress')">🔧 In progress<br><span style="font-size:9px;font-weight:400">လုပ်နေဆဲ</span></button>
+          <button type="button" class="st-btn" id="st-done"     onclick="setStSel('done')">✅ Done<br><span style="font-size:9px;font-weight:400">ပြီးဆုံး</span></button>
+        </div>
+      </div>
+      <div class="field"><label class="flabel">Author <span class="flabel-my">· ဖန်တီးသူ</span></label><input class="finput" id="f-author" placeholder="Your name · သင့်အမည်"></div>
+      <div class="field"><label class="flabel">Assigned to <span class="flabel-my">· တာဝန်ပေးသူ</span></label><input class="finput" id="f-assigned" placeholder="Name · အမည်"></div>
+      <div class="field"><label class="flabel">Due date <span class="flabel-my">· သတ်မှတ်ရက်</span></label><input class="finput" id="f-due" type="date"></div>
+      <div class="field"><label class="flabel">Checklist <span class="flabel-my">· စစ်ဆေးစာရင်း</span></label>
+        <div class="check-list" id="form-checklist"></div>
+        <div class="add-check-row">
+          <input class="add-check-inp" id="check-inp" placeholder="Add item · ထည့်ရန်" onkeydown="if(event.key==='Enter'){event.preventDefault();addCheckItem();}">
+          <button type="button" class="btn btn-ghost" onclick="addCheckItem()" style="font-size:11px;padding:6px 10px">+ Add</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-ghost" onclick="closeModal('task-modal')">Cancel</button>
+      <button type="button" class="btn btn-primary" id="save-btn" onclick="saveTask()">💾 Save task · သိမ်းရန်</button>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div class="overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-top">
+      <div><div class="modal-title" id="detail-title">Task</div><div id="detail-badge" style="margin-top:5px"></div></div>
+      <button type="button" class="modal-close" onclick="closeModal('detail-modal')">✕</button>
+    </div>
+    <div class="modal-body" id="detail-body"></div>
+    <div class="modal-footer" id="detail-footer"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ───────────────────────────────────────────────
+var SHEET_URL = 'https://script.google.com/macros/s/AKfycbxw6HdYH7ScQO85J9ZfUX4DjeqeFOUedFbnBIMnhdng7ihCygLpZtbiX8J1bsbKs0xUFQ/exec';
+var POLL_INTERVAL = 15000; // refresh every 15 seconds
+
+// ── STATE ────────────────────────────────────────────────
+var TASKS        = [];
+var ACTIVITY_LOG = JSON.parse(localStorage.getItem('srr2_log')||'[]');
+var currentView  = 'all';
+var currentPri   = 'all';
+var currentAuthor= '';
+var editingId    = null;
+var currentDetailId = null;
+var formChecklist= [];
+var priSel       = 'medium';
+var stSel        = 'new';
+var pollTimer    = null;
+var lastModified = '';
+
+// ── HELPERS ──────────────────────────────────────────────
+function pad(n){return String(n).padStart(2,'0');}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function nowStr(){var d=new Date();return d.toISOString().slice(0,10)+' '+pad(d.getHours())+':'+pad(d.getMinutes());}
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function fmtDate(s){if(!s)return'';try{var d=new Date(s);return isNaN(d)?s:d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});}catch(e){return s;}}
+function me(){return localStorage.getItem('srr2_me')||'';}
+function showToast(m,dur){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show');},dur||2200);}
+var AC=['#e8410a','#2563eb','#16a34a','#d97706','#7c3aed','#db2777','#0891b2','#65a30d'];
+var ACM={};
+function aColor(n){if(!n)return'#8d9db6';if(!ACM[n])ACM[n]=AC[Object.keys(ACM).length%AC.length];return ACM[n];}
+function aInitials(n){return(n||'?').split(' ').map(function(w){return w[0];}).join('').toUpperCase().slice(0,2);}
+function tick(){var d=new Date();var days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];var months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];document.getElementById('clock').textContent=days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()]+' · '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+setInterval(tick,1000);tick();
+
+// ── SYNC PILL ────────────────────────────────────────────
+function setPill(label,bg,color){var el=document.getElementById('sync-pill');if(!el)return;el.textContent=label;el.style.background=bg;el.style.color=color;el.style.border='1px solid '+color+'55';}
+function pillOk(){setPill('⬤ Live','#e6f4ea','#1a5c0c');}
+function pillLoad(){setPill('⬤ Loading…','#dbeafe','#1e40af');}
+function pillOff(){setPill('⬤ Offline','#f3f4f6','#6b7280');}
+function pillSaving(){setPill('⬤ Saving…','#fef3c7','#92400e');}
+
+// ── LOAD TASKS FROM SHEET ─────────────────────────────────
+function loadTasks(force){
+  pillLoad();
+  var url=SHEET_URL+'?action=get_tasks&t='+Date.now();
+  fetch(url)
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.status==='ok'){
+        TASKS=data.tasks||[];
+        lastModified=data.lastModified||'';
+        render();
+        pillOk();
+        document.getElementById('loading').style.display='none';
+      } else {
+        pillOff();
+        document.getElementById('loading').style.display='none';
+      }
+    })
+    .catch(function(){
+      pillOff();
+      document.getElementById('loading').style.display='none';
+      showToast('⚠️ Cannot reach server — check connection');
+    });
+}
+
+// Start polling
+function startPolling(){
+  if(pollTimer) clearInterval(pollTimer);
+  pollTimer=setInterval(function(){
+    // Silent refresh — don't show loading state
+    fetch(SHEET_URL+'?action=get_tasks&t='+Date.now())
+      .then(function(r){return r.json();})
+      .then(function(data){
+        if(data.status==='ok'){
+          var newMod=data.lastModified||'';
+          if(newMod!==lastModified||!lastModified){
+            TASKS=data.tasks||[];
+            lastModified=newMod;
+            render();
+            if(newMod&&newMod!==lastModified) showToast('🔄 Tasks updated by someone else · အပ်ဒိတ်လာပြီ',3000);
+          }
+          pillOk();
+        }
+      })
+      .catch(function(){pillOff();});
+  }, POLL_INTERVAL);
+}
+
+// ── POST TO SHEET ─────────────────────────────────────────
+function postToSheet(payload, onSuccess, onError){
+  pillSaving();
+  fetch(SHEET_URL, {method:'POST', body:JSON.stringify(payload)})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      pillOk();
+      if(onSuccess) onSuccess(data);
+    })
+    .catch(function(err){
+      pillOff();
+      if(onError) onError(err);
+      else showToast('⚠️ Save failed — check connection');
+    });
+}
+
+// ── LOG ───────────────────────────────────────────────────
+function logActivity(type,who,taskId,taskTitle,detail){
+  var entry={type:type,who:who||'Unknown',taskId:taskId,taskTitle:taskTitle||'',detail:detail||'',ts:nowStr(),date:todayStr()};
+  ACTIVITY_LOG.unshift(entry);
+  if(ACTIVITY_LOG.length>500) ACTIVITY_LOG=ACTIVITY_LOG.slice(0,500);
+  localStorage.setItem('srr2_log',JSON.stringify(ACTIVITY_LOG));
+  // Push to sheet silently
+  try{fetch(SHEET_URL,{method:'POST',body:JSON.stringify({action:'log',logEntry:entry})}).catch(function(){});}catch(e){}
+}
+
+// ── FILTER ────────────────────────────────────────────────
+function setView(v){
+  currentView=v;
+  document.querySelectorAll('.sb-btn').forEach(function(b){b.classList.remove('active');});
+  var el=document.getElementById('sb-'+v);if(el)el.classList.add('active');
+  else document.getElementById('sb-all').classList.add('active');
+  render();
+}
+function setPri(p){
+  currentPri=p;
+  document.querySelectorAll('.fpill').forEach(function(b){b.classList.remove('active');});
+  var el=document.getElementById('fp-'+p);if(el)el.classList.add('active');
+  else document.getElementById('fp-all').classList.add('active');
+  render();
+}
+function taskMatches(t){
+  var s=t.status||'new',p=t.priority||'medium';
+  if(currentView!=='all'&&currentView!=='urgent'&&currentView!=='medium'&&currentView!=='low'&&s!==currentView)return false;
+  if(currentView==='urgent'&&p!=='urgent')return false;
+  if(currentView==='medium'&&p!=='medium')return false;
+  if(currentView==='low'&&p!=='low')return false;
+  if(currentPri!=='all'&&p!==currentPri)return false;
+  if(currentAuthor&&(t.author||'')!==currentAuthor&&(t.assigned||'')!==currentAuthor)return false;
+  var q=(document.getElementById('search').value||'').toLowerCase();
+  if(q&&!(t.title||'').toLowerCase().includes(q)&&!(t.desc||'').toLowerCase().includes(q)&&!(t.author||'').toLowerCase().includes(q))return false;
+  return true;
+}
+
+// ── RENDER ────────────────────────────────────────────────
+function render(){
+  updateSummary();
+  var filtered=TASKS.filter(taskMatches);
+  var cols={new:[],progress:[],done:[]};
+  filtered.forEach(function(t){var s=t.status||'new';if(!cols[s])cols[s]=[];cols[s].push(t);});
+
+  function taskCard(t){
+    var pc={urgent:'#e8410a',medium:'#d97706',low:'#16a34a'}[t.priority]||'#8d9db6';
+    var priLabel={urgent:'🔴 Urgent',medium:'🟡 Medium',low:'🟢 Low'}[t.priority]||'';
+    var ac=aColor(t.author);
+    var chkT=(t.checklist||[]).length,chkD=(t.checklist||[]).filter(function(i){return i.done;}).length;
+    var chkHtml=chkT>0?'<span style="font-size:10px;color:var(--muted)">☑ '+chkD+'/'+chkT+'</span>':'';
+    var cmt=(t.comments||[]).length;
+    var dueHtml='';
+    if(t.due){var ov=t.status!=='done'&&t.due<todayStr();dueHtml='<span class="tc-due'+(ov?' overdue':'')+'">📅 '+fmtDate(t.due)+'</span>';}
+    return'<div class="tcard '+t.priority+'" onclick="openDetail('+t.id+')">'
+      +'<div class="tc-top"><div class="tc-title">'+esc(t.title)+'</div><div class="tc-pri '+t.priority+'">'+priLabel+'</div></div>'
+      +(t.desc?'<div class="tc-desc">'+esc(t.desc)+'</div>':'')
+      +'<div class="tc-meta">'
+      +'<div class="tc-avatar" style="background:'+ac+'">'+aInitials(t.author)+'</div>'
+      +'<span class="tc-author">'+esc(t.author||'Unknown')+'</span>'
+      +(t.assigned?'<span style="font-size:10px;color:var(--muted)">→ '+esc(t.assigned)+'</span>':'')
+      +dueHtml+chkHtml
+      +(cmt?'<span class="tc-comments">💬 '+cmt+'</span>':'')
+      +'<span class="tc-date">'+(t.createdAt||'').slice(0,10)+'</span>'
+      +'</div></div>';
+  }
+  function column(key,title,titleMy,dotColor,badgeCls){
+    var cards=cols[key]||[];
+    return'<div class="kol">'
+      +'<div class="kol-head"><div><div class="kol-title"><span class="kdot" style="background:'+dotColor+'"></span>'+title+' <span class="kol-badge '+badgeCls+'">'+cards.length+'</span></div><div class="kol-my">'+titleMy+'</div></div></div>'
+      +(cards.length?cards.map(taskCard).join(''):'<div class="empty"><div class="empty-ico">✨</div><div style="font-size:12px">No tasks</div></div>')
+      +'</div>';
+  }
+  document.getElementById('board').innerHTML='<div class="kanban">'
+    +column('new','New','အသစ်','#991b1b','new')
+    +column('progress','In progress','လုပ်နေဆဲ','#d97706','prog')
+    +column('done','Done','ပြီးဆုံး','#16a34a','done')
+    +'</div>';
+}
+
+function updateSummary(){
+  var counts={all:TASKS.length,new:0,progress:0,done:0,urgent:0,medium:0,low:0};
+  TASKS.forEach(function(t){counts[t.status||'new']=(counts[t.status||'new']||0)+1;counts[t.priority||'medium']=(counts[t.priority||'medium']||0)+1;});
+  ['all','new','progress','done','urgent','medium','low'].forEach(function(k){var el=document.getElementById('cnt-'+k);if(el)el.textContent=counts[k]||0;});
+  function sc(l,lm,v,c){return'<div class="sum-card"><div class="sum-val" style="color:'+c+'">'+v+'</div><div class="sum-lbl">'+l+'</div><div class="sum-lbl-my">'+lm+'</div></div>';}
+  document.getElementById('sum-row').innerHTML=
+    sc('Total','အားလုံး',TASKS.length,'#0d0d0d')+
+    sc('New','အသစ်',counts.new,'#991b1b')+
+    sc('In progress','လုပ်နေဆဲ',counts.progress,'#92400e')+
+    sc('Done','ပြီးဆုံး',counts.done,'#16a34a')+
+    sc('Urgent','အရေးပေါ်',counts.urgent,'#e8410a');
+  // Author sidebar
+  var authors={};
+  TASKS.forEach(function(t){if(t.author)authors[t.author]=1;if(t.assigned)authors[t.assigned]=1;});
+  document.getElementById('sb-authors').innerHTML=Object.keys(authors).map(function(a){
+    var c=aColor(a);
+    return'<button type="button" class="sb-btn'+(currentAuthor===a?' active':'')+'" onclick="setAuthor(\''+esc(a)+'\')" style="font-size:11px">'
+      +'<div style="width:18px;height:18px;border-radius:50%;background:'+c+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0">'+aInitials(a)+'</div>'
+      +esc(a)+'</button>';
+  }).join('')||'<div style="padding:4px 8px;font-size:11px;color:var(--muted)">No team yet</div>';
+}
+function setAuthor(a){currentAuthor=currentAuthor===a?'':a;render();}
+
+// ── NEW / EDIT MODAL ──────────────────────────────────────
+function openNewTask(){
+  editingId=null;formChecklist=[];priSel='medium';stSel='new';
+  document.getElementById('task-modal-title').textContent='New Task · တာဝန်သစ်';
+  document.getElementById('f-title').value='';
+  document.getElementById('f-desc').value='';
+  document.getElementById('f-author').value=me();
+  document.getElementById('f-assigned').value='';
+  document.getElementById('f-due').value='';
+  document.getElementById('form-checklist').innerHTML='';
+  renderPri();renderSt();
+  document.getElementById('save-btn').textContent='💾 Save task · သိမ်းရန်';
+  document.getElementById('task-modal').classList.add('open');
+}
+function openEditTask(id){
+  var t=TASKS.find(function(x){return String(x.id)===String(id);});if(!t)return;
+  editingId=id;formChecklist=(t.checklist||[]).map(function(i){return Object.assign({},i);});
+  priSel=t.priority||'medium';stSel=t.status||'new';
+  document.getElementById('task-modal-title').textContent='Edit Task · တာဝန်တည်းဖြတ်ရန်';
+  document.getElementById('f-title').value=t.title||'';
+  document.getElementById('f-desc').value=t.desc||'';
+  document.getElementById('f-author').value=t.author||'';
+  document.getElementById('f-assigned').value=t.assigned||'';
+  document.getElementById('f-due').value=t.due||'';
+  renderFormChecklist();renderPri();renderSt();
+  document.getElementById('save-btn').textContent='💾 Update · ပြင်ဆင်ရန်';
+  closeModal('detail-modal');
+  document.getElementById('task-modal').classList.add('open');
+}
+function setPriSel(p){priSel=p;renderPri();}
+function setStSel(s){stSel=s;renderSt();}
+function renderPri(){['urgent','medium','low'].forEach(function(p){document.getElementById('pri-'+p).className='pri-btn'+(priSel===p?' sel-'+p:'');});}
+function renderSt(){['new','progress','done'].forEach(function(s){document.getElementById('st-'+s).className='st-btn'+(stSel===s?' sel-'+s:'');});}
+
+function addCheckItem(){
+  var inp=document.getElementById('check-inp');var val=inp.value.trim();if(!val)return;
+  formChecklist.push({text:val,done:false});inp.value='';renderFormChecklist();
+}
+function toggleFormCheck(i){formChecklist[i].done=!formChecklist[i].done;renderFormChecklist();}
+function removeFormCheck(i){formChecklist.splice(i,1);renderFormChecklist();}
+function renderFormChecklist(){
+  document.getElementById('form-checklist').innerHTML=formChecklist.map(function(item,i){
+    return'<div class="check-item">'
+      +'<input type="checkbox" class="check-cb"'+(item.done?' checked':'')+' onchange="toggleFormCheck('+i+')">'
+      +'<span class="check-text'+(item.done?' done':'')+'">'+esc(item.text)+'</span>'
+      +'<button type="button" class="check-del" onclick="removeFormCheck('+i+')">✕</button>'
+      +'</div>';
+  }).join('');
+}
+
+function saveTask(){
+  var title=document.getElementById('f-title').value.trim();
+  if(!title){showToast('⚠️ Enter a title first · ခေါင်းစဉ်ထည့်ပါ');return;}
+  var author=document.getElementById('f-author').value.trim()||'Unknown';
+  if(author)localStorage.setItem('srr2_me',author);
+  document.getElementById('save-btn').textContent='⏳ Saving…';
+  document.getElementById('save-btn').disabled=true;
+
+  var task={
+    id:       editingId||null,
+    title:    title,
+    desc:     document.getElementById('f-desc').value.trim(),
+    priority: priSel,
+    status:   stSel,
+    author:   author,
+    assigned: document.getElementById('f-assigned').value.trim(),
+    due:      document.getElementById('f-due').value,
+    checklist:formChecklist.map(function(i){return Object.assign({},i);}),
+    comments: editingId?(TASKS.find(function(x){return String(x.id)===String(editingId);})||{}).comments||[]:[]
+  };
+  if(stSel==='done'&&!editingId) task.finishedAt=nowStr();
+
+  var wasEditing=editingId;
+  postToSheet(
+    {action:'save_task', task:task, logEntry:{type:wasEditing?'edited':'created',who:author,taskId:wasEditing||'new',taskTitle:title,ts:nowStr(),date:todayStr(),detail:wasEditing?'Edited':'Priority: '+priSel}},
+    function(data){
+      closeModal('task-modal');
+      loadTasks(true);
+      logActivity(wasEditing?'edited':'created',author,wasEditing||(data.task&&data.task.id)||'',title,wasEditing?'Edited':'Priority: '+priSel);
+      showToast(wasEditing?'✅ Task updated · ပြင်ဆင်ပြီး':'✅ Task created · ဖန်တီးပြီး');
+    },
+    function(){
+      document.getElementById('save-btn').textContent='💾 Retry';
+      document.getElementById('save-btn').disabled=false;
+      showToast('❌ Save failed — check connection · ချိတ်ဆက်မှုစစ်ပါ');
+    }
+  );
+}
+
+// ── DETAIL MODAL ──────────────────────────────────────────
+function openDetail(id){
+  var t=TASKS.find(function(x){return String(x.id)===String(id);});if(!t)return;
+  currentDetailId=id;
+  var myName=me();
+  if(myName){logActivity('viewed',myName,id,t.title,'');}
+  renderDetail(t);
+  document.getElementById('detail-modal').classList.add('open');
+}
+
+function renderDetail(t){
+  document.getElementById('detail-title').textContent=t.title;
+  var bm={new:'<span class="sbadge new">🆕 New · အသစ်</span>',progress:'<span class="sbadge progress">🔧 In progress · လုပ်နေဆဲ</span>',done:'<span class="sbadge done">✅ Done · ပြီးဆုံး</span>'};
+  document.getElementById('detail-badge').innerHTML=bm[t.status]||'';
+  var priColor={urgent:'#991b1b',medium:'#92400e',low:'#065f46'}[t.priority]||'var(--muted)';
+  var priLabel={urgent:'🔴 Urgent · အရေးပေါ်',medium:'🟡 Medium · အလယ်',low:'🟢 Low · အရေးမကြီး'}[t.priority]||'';
+  var ac=aColor(t.author);
+
+  // Checklist
+  var ckHtml='';
+  if(t.checklist&&t.checklist.length){
+    var ckD=t.checklist.filter(function(i){return i.done;}).length;
+    ckHtml='<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--border)">Checklist · စစ်ဆေးစာရင်း ('+ckD+'/'+t.checklist.length+')</div>'
+      +'<div style="background:#f4f2ef;border-radius:3px;height:4px;margin-bottom:7px"><div style="background:var(--accent3);height:4px;border-radius:3px;width:'+(t.checklist.length?Math.round(ckD/t.checklist.length*100):0)+'%"></div></div>'
+      +'<div class="check-list">'+t.checklist.map(function(item,i){
+        return'<div class="check-item"><input type="checkbox" class="check-cb"'+(item.done?' checked':'')+' onchange="toggleDetailCheck('+i+')">'
+          +'<span class="check-text'+(item.done?' done':'')+'">'+esc(item.text)+'</span></div>';
+      }).join('')+'</div></div>';
+  }
+
+  // Comments
+  var comments=t.comments||[];
+  var cmtHtml='<div style="margin-bottom:12px"><div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)">Comments · မှတ်ချက်များ ('+comments.length+')</div>'
+    +'<div class="comments-list">'+comments.map(function(c){
+      var cc=aColor(c.author);
+      return'<div class="comment"><div class="comment-top"><div class="comment-author"><div class="comment-dot" style="background:'+cc+'">'+aInitials(c.author)+'</div>'+esc(c.author)+'</div><span class="comment-date">'+esc(c.date||'')+'</span></div><div class="comment-text">'+esc(c.text)+'</div></div>';
+    }).join('')+'</div>'
+    +'<div style="margin-top:8px"><textarea class="comment-inp" id="cmt-text" placeholder="Write a comment · မှတ်ချက်ရေးရန်..."></textarea>'
+    +'<div style="display:flex;gap:6px;margin-top:5px;align-items:center">'
+    +'<input class="finput" id="cmt-author" placeholder="Your name · သင့်အမည်" style="max-width:140px;padding:6px 9px;font-size:11px" value="'+esc(me())+'">'
+    +'<button type="button" class="btn btn-primary" onclick="addComment()" style="font-size:11px;padding:7px 13px">Send · ပို့ရန်</button>'
+    +'</div></div></div>';
+
+  var body=
+    (t.desc?'<div style="font-size:13px;line-height:1.6;margin-bottom:12px">'+esc(t.desc)+'</div>':'')
+    +'<div class="dmeta-grid">'
+    +'<div class="dmeta-item"><div class="dmeta-label">Author · ဖန်တီးသူ</div><div class="dmeta-val" style="display:flex;align-items:center;gap:5px"><div style="width:18px;height:18px;border-radius:50%;background:'+ac+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff">'+aInitials(t.author)+'</div>'+esc(t.author||'—')+'</div></div>'
+    +'<div class="dmeta-item"><div class="dmeta-label">Assigned · တာဝန်ပေး</div><div class="dmeta-val">'+esc(t.assigned||'—')+'</div></div>'
+    +'<div class="dmeta-item"><div class="dmeta-label">Created · ဖန်တီးချိန်</div><div class="dmeta-val">'+esc((t.createdAt||'—').slice(0,16))+'</div></div>'
+    +'<div class="dmeta-item"><div class="dmeta-label">Due · သတ်မှတ်ရက်</div><div class="dmeta-val">'+esc(fmtDate(t.due)||'—')+'</div></div>'
+    +'<div class="dmeta-item"><div class="dmeta-label">Priority · အရေးပါမှု</div><div class="dmeta-val" style="color:'+priColor+'">'+priLabel+'</div></div>'
+    +'<div class="dmeta-item"><div class="dmeta-label">Finished · ပြီးဆုံးချိန်</div><div class="dmeta-val">'+esc((t.finishedAt||'—').slice(0,16))+'</div></div>'
+    +'</div>'
+    +ckHtml+cmtHtml;
+
+  document.getElementById('detail-body').innerHTML=body;
+  document.getElementById('detail-footer').innerHTML=
+    '<button type="button" class="btn btn-ghost" onclick="deleteTask(\''+t.id+'\')" style="color:var(--accent)">🗑 Delete</button>'
+    +'<button type="button" class="btn btn-ghost" onclick="openEditTask(\''+t.id+'\')">✏️ Edit</button>'
+    +(t.status!=='done'
+      ?'<button type="button" class="btn btn-success" onclick="quickStatus(\''+t.id+'\',\'done\')">✅ Mark done · ပြီးဆုံး</button>'
+      :'<button type="button" class="btn btn-ghost" onclick="quickStatus(\''+t.id+'\',\'new\')">↩ Reopen</button>');
+}
+
+function toggleDetailCheck(idx){
+  var t=TASKS.find(function(x){return String(x.id)===String(currentDetailId);});if(!t||!t.checklist)return;
+  t.checklist[idx].done=!t.checklist[idx].done;
+  // Save updated task to sheet
+  postToSheet({action:'save_task',task:t},function(){renderDetail(t);render();},null);
+}
+
+function addComment(){
+  var text=(document.getElementById('cmt-text').value||'').trim();
+  var author=(document.getElementById('cmt-author').value||'').trim();
+  if(!text){showToast('⚠️ Write something first');return;}
+  if(!author){showToast('⚠️ Enter your name');return;}
+  localStorage.setItem('srr2_me',author);
+  var t=TASKS.find(function(x){return String(x.id)===String(currentDetailId);});if(!t)return;
+  var comment={taskId:t.id,author:author,text:text,date:nowStr(),hasPhotos:false,photoCount:0};
+  postToSheet(
+    {action:'add_comment',comment:comment,logEntry:{type:'commented',who:author,taskId:t.id,taskTitle:t.title,ts:nowStr(),date:todayStr(),detail:text.slice(0,60)}},
+    function(){
+      logActivity('commented',author,t.id,t.title,text.slice(0,60));
+      loadTasks(true);
+      showToast('💬 Comment sent · မှတ်ချက်ပို့ပြီး');
+    },
+    function(){showToast('❌ Comment failed');}
+  );
+}
+
+function quickStatus(id,status){
+  var t=TASKS.find(function(x){return String(x.id)===String(id);});if(!t)return;
+  var who=me()||t.author||'Unknown';
+  postToSheet(
+    {action:'update_status',taskId:id,status:status,logEntry:{type:'status',who:who,taskId:id,taskTitle:t.title,ts:nowStr(),date:todayStr(),detail:'Status → '+status}},
+    function(){
+      logActivity('status',who,id,t.title,'Status → '+status);
+      closeModal('detail-modal');
+      loadTasks(true);
+      showToast('✅ Status updated · အခြေအနေပြောင်းပြီး');
+    },
+    function(){showToast('❌ Update failed');}
+  );
+}
+
+function deleteTask(id){
+  var t=TASKS.find(function(x){return String(x.id)===String(id);});
+  var title=t?t.title:'';
+  if(!confirm('Delete this task?\nဤတာဝန်ကိုဖျက်မည်လား?'))return;
+  var who=me()||'Unknown';
+  postToSheet(
+    {action:'delete_task',taskId:id,taskTitle:title,who:who,logEntry:{type:'deleted',who:who,taskId:id,taskTitle:title,ts:nowStr(),date:todayStr(),detail:'Permanently deleted'}},
+    function(){
+      logActivity('deleted',who,id,title,'Deleted');
+      closeModal('detail-modal');
+      loadTasks(true);
+      showToast('🗑 Task deleted · ဖျက်ပြီး');
+    },
+    function(){showToast('❌ Delete failed');}
+  );
+}
+
+// ── ACTIVITY LOG ──────────────────────────────────────────
+var ACT_ICONS={created:'✅',status:'🔄',commented:'💬',edited:'✏️',deleted:'🗑',viewed:'👁'};
+var ACT_LABELS={created:'created task',status:'changed status',commented:'commented on',edited:'edited task',deleted:'deleted task',viewed:'viewed task'};
+
+function renderActivity(){
+  var log=ACTIVITY_LOG;
+  if(!log.length){document.getElementById('activity-list').innerHTML='<div class="empty"><div class="empty-ico">📜</div><div style="font-size:12px">No activity yet</div></div>';return;}
+  var byDate={};var dateOrder=[];
+  log.forEach(function(e){var d=e.date||(e.ts||'').slice(0,10)||'Unknown';if(!byDate[d]){byDate[d]=[];dateOrder.push(d);}byDate[d].push(e);});
+  var html='';
+  dateOrder.forEach(function(date){
+    var entries=byDate[date];
+    html+='<div class="act-day-hdr"><span>'+fmtDate(date)+(date===todayStr()?' <span style="font-size:10px;font-weight:400;color:var(--accent)">— Today</span>':'')+'</span><span style="font-size:10px;font-weight:500;padding:2px 7px;border-radius:10px;background:#f0ece8;color:var(--muted)">'+entries.length+' actions</span></div>';
+    html+='<div style="margin-bottom:10px">';
+    entries.forEach(function(e){
+      var icon=ACT_ICONS[e.type]||'•';
+      var lbl=ACT_LABELS[e.type]||e.type;
+      var ac=aColor(e.who);
+      var time=(e.ts||'').slice(11,16);
+      html+='<div class="act-entry">'
+        +'<div class="act-ico '+e.type+'">'+icon+'</div>'
+        +'<div class="act-body">'
+        +'<div class="act-top">'
+        +'<div style="width:18px;height:18px;border-radius:50%;background:'+ac+';display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;color:#fff;flex-shrink:0">'+aInitials(e.who)+'</div>'
+        +'<span class="act-who">'+esc(e.who)+'</span>'
+        +'<span class="act-what">'+lbl+'</span>'
+        +(e.taskTitle?'<span class="act-task-link" onclick="openDetailByTitle(\''+esc(e.taskId)+'\')">'+esc(e.taskTitle)+'</span>':'')
+        +'<span class="act-time">'+esc(time)+'</span>'
+        +'</div>'
+        +(e.detail?'<div class="act-detail">'+esc(e.detail)+'</div>':'')
+        +'</div></div>';
+    });
+    html+='</div>';
+  });
+  document.getElementById('activity-list').innerHTML=html;
+}
+function openDetailByTitle(id){showPage('board');setTimeout(function(){openDetail(id);},100);}
+
+// ── CALENDAR ─────────────────────────────────────────────
+var calY=new Date().getFullYear(),calM=new Date().getMonth(),calSel=todayStr();
+function renderCalendar(){
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var monthsMy=['ဇန်နဝါရီ','ဖေဖော်ဝါရီ','မတ်','ဧပြီ','မေ','ဇွန်','ဇူလိုင်','သြဂုတ်','စက်တင်ဘာ','အောက်တိုဘာ','နိုဝင်ဘာ','ဒီဇင်ဘာ'];
+  var dows=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var today=todayStr();
+  var firstDay=new Date(calY,calM,1);
+  var lastDay=new Date(calY,calM+1,0);
+  var taskMap={};
+  TASKS.forEach(function(t){
+    function add(d){if(!d)return;var k=String(d).slice(0,10);if(!taskMap[k])taskMap[k]=[];taskMap[k].push(t);}
+    add(t.createdAt);add(t.due);if(t.finishedAt)add(t.finishedAt);
+  });
+  var pc={urgent:'#e8410a',medium:'#d97706',low:'#16a34a',default:'#8d9db6'};
+  var html='<div class="cal-nav">'
+    +'<button type="button" class="cal-nav-btn" onclick="calPrev()">‹</button>'
+    +'<div class="cal-month">'+months[calM]+' '+calY+' <span style="font-size:12px;font-weight:400;color:var(--muted)">· '+monthsMy[calM]+'</span></div>'
+    +'<button type="button" class="cal-nav-btn" onclick="calNext()">›</button>'
+    +'<button type="button" class="cal-nav-btn" onclick="calToday()" style="width:auto;font-size:11px;padding:0 9px">Today</button>'
+    +'</div>';
+  html+='<div class="cal-grid">';
+  dows.forEach(function(d){html+='<div class="cal-dow">'+d+'</div>';});
+  var startDow=firstDay.getDay();
+  for(var i=0;i<startDow;i++) html+='<div class="cal-day other"><div class="cal-dn" style="color:var(--muted)">'+(new Date(calY,calM,i-startDow+1).getDate())+'</div></div>';
+  for(var d=1;d<=lastDay.getDate();d++){
+    var ds=calY+'-'+pad(calM+1)+'-'+pad(d);
+    var cls='cal-day'+(ds===today?' today':'')+(ds===calSel?' selected':'');
+    var tasks2=taskMap[ds]||[];
+    html+='<div class="'+cls+'" onclick="selectDay(\''+ds+'\')">';
+    html+='<div class="cal-dn">'+d+'</div>';
+    if(tasks2.length) html+='<div class="cal-dots">'+tasks2.slice(0,5).map(function(t){return'<div class="cal-dot" style="background:'+(pc[t.priority]||pc.default)+'"></div>';}).join('')+'</div>';
+    html+='</div>';
+  }
+  var rem=(7-((startDow+lastDay.getDate())%7))%7;
+  for(var i=1;i<=rem;i++) html+='<div class="cal-day other"><div class="cal-dn" style="color:var(--muted)">'+i+'</div></div>';
+  html+='</div>';
+  // Day tasks panel
+  var selTasks=[];
+  TASKS.forEach(function(t){
+    var dates=[(t.createdAt||'').slice(0,10),t.due,(t.finishedAt||'').slice(0,10)];
+    if(dates.indexOf(calSel)>-1) selTasks.push(t);
+  });
+  html+='<div class="cal-tasks"><div style="font-family:var(--font-head);font-size:14px;font-weight:700;margin-bottom:9px">'+fmtDate(calSel)+' · <span style="font-size:12px;font-weight:400;color:var(--muted)">'+selTasks.length+' tasks</span></div>';
+  if(!selTasks.length) html+='<div style="color:var(--muted);font-size:12px;text-align:center;padding:12px">No tasks on this day</div>';
+  else selTasks.forEach(function(t){
+    var ptc=pc[t.priority]||pc.default;
+    var roles=[];
+    if((t.createdAt||'').slice(0,10)===calSel) roles.push('Created');
+    if(t.due===calSel) roles.push('Due');
+    if((t.finishedAt||'').slice(0,10)===calSel) roles.push('Finished');
+    html+='<div class="cal-task-row" onclick="openDetail('+t.id+')">'
+      +'<div class="cal-tdot" style="background:'+ptc+'"></div>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:500">'+esc(t.title)+'</div>'
+      +'<div style="font-size:10px;color:var(--muted)">'+roles.join(' · ')+' · '+esc(t.author||'')+'</div></div>'
+      +'<span style="font-size:10px;padding:2px 6px;border-radius:5px;background:#f4f2ef;color:var(--muted)">'+t.status+'</span>'
+      +'</div>';
+  });
+  html+='</div>';
+  document.getElementById('calendar-container').innerHTML=html;
+}
+function selectDay(d){calSel=d;renderCalendar();}
+function calPrev(){calM--;if(calM<0){calM=11;calY--;}renderCalendar();}
+function calNext(){calM++;if(calM>11){calM=0;calY++;}renderCalendar();}
+function calToday(){calY=new Date().getFullYear();calM=new Date().getMonth();calSel=todayStr();renderCalendar();}
+
+// ── PAGES ─────────────────────────────────────────────────
+function showPage(p){
+  ['board','activity','calendar'].forEach(function(pg){document.getElementById('page-'+pg).style.display=pg===p?'block':'none';});
+  document.querySelectorAll('.nav-btn').forEach(function(el,i){el.classList.toggle('active',['board','activity','calendar'][i]===p);});
+  var fb=document.querySelector('.filterbar'),sr=document.getElementById('sum-row');
+  if(fb)fb.style.display=p==='board'?'':'none';
+  if(sr)sr.style.display=p==='board'?'':'none';
+  if(p==='activity') renderActivity();
+  if(p==='calendar') renderCalendar();
+}
+
+// ── MODAL UTILS ───────────────────────────────────────────
+function closeModal(id){
+  document.getElementById(id).classList.remove('open');
+  if(id==='task-modal'){var btn=document.getElementById('save-btn');if(btn){btn.textContent='💾 Save task · သိမ်းရန်';btn.disabled=false;}}
+}
+['task-modal','detail-modal'].forEach(function(id){
+  document.getElementById(id).addEventListener('click',function(e){if(e.target===this)closeModal(id);});
+});
+
+// ── EXPORT CSV ────────────────────────────────────────────
+function exportCSV(){
+  var rows=[['ID','Title','Description','Status','Priority','Author','Assigned','Due','Created','Updated','Finished','Comments','Checklist']];
+  TASKS.forEach(function(t){rows.push([t.id,t.title||'',t.desc||'',t.status||'',t.priority||'',t.author||'',t.assigned||'',t.due||'',t.createdAt||'',t.updatedAt||'',t.finishedAt||'',(t.comments||[]).length,(t.checklist||[]).length]);});
+  var csv=rows.map(function(r){return r.map(function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='SRR2_Tasks_'+todayStr()+'.csv';a.click();
+  showToast('✅ CSV exported!');
+}
+
+// ── INIT ──────────────────────────────────────────────────
+loadTasks(true);
+startPolling();
+showPage('board');
+</script>
+</body>
+</html>
